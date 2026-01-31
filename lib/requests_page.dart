@@ -95,7 +95,6 @@ class _RequestsPageState extends State<RequestsPage> {
           return ListTile(
             title: Text(title),
             subtitle: Text("Status: $status"),
-            trailing: Text("#$id"),
             onTap: () {
               Navigator.push(
                 context,

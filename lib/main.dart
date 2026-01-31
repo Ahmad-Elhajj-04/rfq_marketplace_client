@@ -26,8 +26,10 @@ class MyApp extends StatelessWidget {
             );
 
           case "/register":
-          // optional: you can also pass role here later
-            return MaterialPageRoute(builder: (_) => const RegisterPage());
+            final role = settings.arguments as String? ?? "user";
+            return MaterialPageRoute(
+              builder: (_) => RegisterPage(role: role),
+            );
 
           default:
             return MaterialPageRoute(
