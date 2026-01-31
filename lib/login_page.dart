@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'auth_service.dart';
 import 'token_store.dart';
-import 'package:flutter/services.dart';
+import 'requests_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Ensure fields start empty (prevents previous session values showing)
+    // Start empty
     _email.text = "";
     _password.text = "";
   }
@@ -49,9 +50,11 @@ class _LoginPageState extends State<LoginPage> {
       await TokenStore.save(token);
 
       if (!mounted) return;
-      Navigator.popUntil(context, (r) => r.isFirst); // back to landing
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Logged in as ${res["user"]["role"]}")),
+
+      // ✅ Go directly to My Requests page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const RequestsPage()),
       );
     } catch (e) {
       setState(() => _error = e.toString());
@@ -75,7 +78,10 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Login", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Login",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 18),
 
                     TextFormField(
@@ -93,6 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
+
                     const SizedBox(height: 12),
 
                     TextFormField(
@@ -100,33 +107,40 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: true,
                       enableSuggestions: false,
                       autocorrect: false,
-                      // This helps prevent autofill on many browsers:
                       autofillHints: const [AutofillHints.password],
                       decoration: const InputDecoration(
                         labelText: "Password",
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
+                      validator: (v) =>
+                      (v ?? "").isEmpty ? "Password is required" : null,
                       onEditingComplete: () => TextInput.finishAutofillContext(),
                     ),
 
                     const SizedBox(height: 10),
+
                     if (_error != null)
                       Text(_error!, style: const TextStyle(color: Colors.red)),
 
                     const SizedBox(height: 12),
+
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submit,
                         child: _loading
-                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                             : const Text("Login"),
                       ),
                     ),
 
                     const SizedBox(height: 10),
+
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, "/register"),
                       child: const Text("Create account"),
