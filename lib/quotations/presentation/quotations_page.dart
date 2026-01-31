@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'quotations_service.dart';
+import 'package:rfq_marketplace_flutter/quotations/data/quotations_service.dart';
 import 'quotation_submit_page.dart';
 
 class QuotationsPage extends StatefulWidget {

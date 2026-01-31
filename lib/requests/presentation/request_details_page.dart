@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'requests_service.dart';
-import 'quotations_page.dart';
+import 'package:rfq_marketplace_flutter/requests/data/requests_service.dart';
+import 'package:rfq_marketplace_flutter/quotations/presentation/quotations_page.dart';
 
 class RequestDetailsPage extends StatefulWidget {
   final Map<String, dynamic> request;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'notifications_service.dart';
+import 'package:rfq_marketplace_flutter/notifications/data/notifications_service.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
