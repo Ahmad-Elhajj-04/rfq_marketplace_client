@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'token_store.dart';
+import 'requests_page.dart';
+import 'company_requests_page.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  final String role; // "user" or "company"
+  const RegisterPage({super.key, required this.role});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -14,20 +17,21 @@ class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _name = TextEditingController();
+  final _companyName = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
-  final _companyName = TextEditingController();
 
-  bool _isCompany = false;
   bool _loading = false;
   String? _error;
+
+  bool get isCompany => widget.role == "company";
 
   @override
   void dispose() {
     _name.dispose();
+    _companyName.dispose();
     _email.dispose();
     _password.dispose();
-    _companyName.dispose();
     super.dispose();
   }
 
@@ -40,18 +44,38 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      final res = _isCompany
-          ? await _auth.registerCompany(_name.text, _email.text, _password.text, _companyName.text)
-          : await _auth.registerUser(_name.text, _email.text, _password.text);
+      final res = isCompany
+          ? await _auth.registerCompany(
+        _name.text,
+        _email.text,
+        _password.text,
+        _companyName.text,
+      )
+          : await _auth.registerUser(
+        _name.text,
+        _email.text,
+        _password.text,
+      );
 
       final token = res["token"] as String;
       await TokenStore.save(token);
 
+      final user = res["user"] as Map<String, dynamic>;
+      final role = (user["role"] ?? "").toString();
+
       if (!mounted) return;
-      Navigator.popUntil(context, (r) => r.isFirst);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created and logged in")),
-      );
+
+      if (role == "company") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CompanyRequestsPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RequestsPage()),
+        );
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -61,8 +85,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final title = isCompany ? "Company Sign up" : "User Sign up";
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      appBar: AppBar(title: Text(title)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -72,14 +98,6 @@ class _RegisterPageState extends State<RegisterPage> {
               key: _formKey,
               child: ListView(
                 children: [
-                  const SizedBox(height: 10),
-                  SwitchListTile(
-                    title: const Text("Register as Company"),
-                    value: _isCompany,
-                    onChanged: (v) => setState(() => _isCompany = v),
-                  ),
-                  const SizedBox(height: 10),
-
                   TextFormField(
                     controller: _name,
                     decoration: const InputDecoration(labelText: "Name", border: OutlineInputBorder()),
@@ -87,11 +105,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 12),
 
-                  if (_isCompany) ...[
+                  if (isCompany) ...[
                     TextFormField(
                       controller: _companyName,
                       decoration: const InputDecoration(labelText: "Company Name", border: OutlineInputBorder()),
-                      validator: (v) => (v ?? "").trim().isEmpty ? "Company name is required" : null,
+                      validator: (v) => (v ?? "").trim().isEmpty ? "Company Name is required" : null,
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -115,13 +133,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   if (_error != null)
                     Text(_error!, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 12),
 
-                  const SizedBox(height: 14),
                   SizedBox(
-                    width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
                       onPressed: _loading ? null : _submit,
