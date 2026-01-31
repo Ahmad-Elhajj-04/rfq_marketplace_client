@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'auth_service.dart';
 import 'token_store.dart';
 import 'requests_page.dart';
+import 'company_requests_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String? expectedRole; // "user" or "company"
+  const LoginPage({super.key, this.expectedRole});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -24,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Start empty
     _email.text = "";
     _password.text = "";
   }
@@ -34,6 +36,11 @@ class _LoginPageState extends State<LoginPage> {
     _email.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  String get _title {
+    if (widget.expectedRole == "company") return "Company Login";
+    return "User Login";
   }
 
   Future<void> _submit() async {
@@ -47,15 +54,33 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final res = await _auth.login(_email.text, _password.text);
       final token = res["token"] as String;
+
+      final user = res["user"] as Map<String, dynamic>;
+      final role = (user["role"] ?? "").toString();
+
+      //  Enforce role from landing choice
+      if (widget.expectedRole != null && role != widget.expectedRole) {
+        setState(() {
+          _error = "This account is not a ${widget.expectedRole} account.";
+        });
+        return;
+      }
+
       await TokenStore.save(token);
 
       if (!mounted) return;
 
-      // ✅ Go directly to My Requests page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const RequestsPage()),
-      );
+      if (role == "company") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CompanyRequestsPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RequestsPage()),
+        );
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -66,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
+      appBar: AppBar(title: Text(_title)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -78,18 +103,12 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Login",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
+                    Text(_title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 18),
 
                     TextFormField(
                       controller: _email,
-                      decoration: const InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.username],
                       validator: (v) {
@@ -99,7 +118,6 @@ class _LoginPageState extends State<LoginPage> {
                         return null;
                       },
                     ),
-
                     const SizedBox(height: 12),
 
                     TextFormField(
@@ -108,39 +126,28 @@ class _LoginPageState extends State<LoginPage> {
                       enableSuggestions: false,
                       autocorrect: false,
                       autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(
-                        labelText: "Password",
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) =>
-                      (v ?? "").isEmpty ? "Password is required" : null,
+                      decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+                      validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
                       onEditingComplete: () => TextInput.finishAutofillContext(),
                     ),
 
                     const SizedBox(height: 10),
-
                     if (_error != null)
                       Text(_error!, style: const TextStyle(color: Colors.red)),
 
                     const SizedBox(height: 12),
-
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submit,
                         child: _loading
-                            ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Text("Login"),
                       ),
                     ),
 
                     const SizedBox(height: 10),
-
                     TextButton(
                       onPressed: () => Navigator.pushNamed(context, "/register"),
                       child: const Text("Create account"),

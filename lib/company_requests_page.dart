@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'requests_service.dart';
-import 'request_create_page.dart';
+import 'api_client.dart';
 import 'request_details_page.dart';
 import 'notifications_page.dart';
 
-class RequestsPage extends StatefulWidget {
-  const RequestsPage({super.key});
+class CompanyRequestsPage extends StatefulWidget {
+  const CompanyRequestsPage({super.key});
 
   @override
-  State<RequestsPage> createState() => _RequestsPageState();
+  State<CompanyRequestsPage> createState() => _CompanyRequestsPageState();
 }
 
-class _RequestsPageState extends State<RequestsPage> {
-  final _service = RequestsService();
+class _CompanyRequestsPageState extends State<CompanyRequestsPage> {
+  final _api = ApiClient();
 
   bool _loading = true;
   String? _error;
@@ -31,21 +30,13 @@ class _RequestsPageState extends State<RequestsPage> {
     });
 
     try {
-      final items = await _service.myRequests(); // user-only endpoint
-      setState(() => _requests = items);
+      final res = await _api.get("/v1/requests"); // company browse endpoint
+      setState(() => _requests = (res["requests"] as List<dynamic>));
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
       setState(() => _loading = false);
     }
-  }
-
-  Future<void> _openCreate() async {
-    final created = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RequestCreatePage()),
-    );
-    if (created == true) _load();
   }
 
   void _openNotifications() {
@@ -59,42 +50,36 @@ class _RequestsPageState extends State<RequestsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Requests"),
+        title: const Text("Available Requests"),
         actions: [
           IconButton(
             onPressed: _openNotifications,
             icon: const Icon(Icons.notifications),
-            tooltip: "Notifications",
           ),
           IconButton(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
-            tooltip: "Refresh",
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreate,
-        child: const Icon(Icons.add),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(child: Text(_error!))
           : _requests.isEmpty
-          ? const Center(child: Text("No requests yet. Tap + to create one."))
+          ? const Center(
+        child: Text("No matching requests.\nSubscribe to categories to receive RFQs."),
+      )
           : ListView.separated(
         itemCount: _requests.length,
         separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final r = _requests[index] as Map<String, dynamic>;
+        itemBuilder: (context, i) {
+          final r = _requests[i] as Map<String, dynamic>;
           final title = r["title"]?.toString() ?? "Untitled";
-          final status = r["status"]?.toString() ?? "-";
           final id = r["id"] ?? "-";
 
           return ListTile(
             title: Text(title),
-            subtitle: Text("Status: $status"),
             trailing: Text("#$id"),
             onTap: () {
               Navigator.push(

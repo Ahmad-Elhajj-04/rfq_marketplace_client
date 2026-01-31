@@ -17,27 +17,24 @@ class LandingPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 16),
-
                   const Text(
                     "RFQ Marketplace",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 10),
-
                   const Text(
                     "Post requests, receive quotations, and choose the best offer — in real time.",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, height: 1.3),
                   ),
-
                   const SizedBox(height: 26),
 
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, "/login");
+                        Navigator.pushNamed(context, "/login", arguments: "user");
                       },
                       child: const Text("Continue as User"),
                     ),
@@ -49,7 +46,7 @@ class LandingPage extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, "/login");
+                        Navigator.pushNamed(context, "/login", arguments: "company");
                       },
                       child: const Text("Continue as Company"),
                     ),
