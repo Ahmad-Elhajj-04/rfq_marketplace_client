@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
-import 'token_store.dart';
-import 'requests_page.dart';
-import 'company_requests_page.dart';
+import 'package:rfq_marketplace_flutter/features/auth/data/auth_service.dart';
+import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/requests_page.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/company_requests_page.dart';
 
 class RegisterPage extends StatefulWidget {
   final String role; // "user" or "company"

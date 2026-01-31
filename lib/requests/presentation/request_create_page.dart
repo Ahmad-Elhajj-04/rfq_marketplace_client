@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'requests_service.dart';
+import 'package:rfq_marketplace_flutter/requests/data/requests_service.dart';
 
 class RequestCreatePage extends StatefulWidget {
   const RequestCreatePage({super.key});

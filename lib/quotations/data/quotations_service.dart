@@ -1,4 +1,4 @@
-import 'api_client.dart';
+import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
 
 class QuotationsService {
   final ApiClient _api = ApiClient();

@@ -1,4 +1,4 @@
-import 'api_client.dart';
+import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
 
 class NotificationsService {
   final ApiClient _api = ApiClient();

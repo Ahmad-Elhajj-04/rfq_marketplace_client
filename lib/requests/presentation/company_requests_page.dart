@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'api_client.dart';
-import 'request_details_page.dart';
-import 'notifications_page.dart';
+
+import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/request_details_page.dart';
+import 'package:rfq_marketplace_flutter/notifications/presentation/notifications_page.dart';
 
 class CompanyRequestsPage extends StatefulWidget {
   const CompanyRequestsPage({super.key});

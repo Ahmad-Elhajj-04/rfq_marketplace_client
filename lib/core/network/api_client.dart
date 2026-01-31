@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'api.dart';
-import 'token_store.dart';
+import 'package:rfq_marketplace_flutter/core/constans/api.dart';
+import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 
 class ApiClient {
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
