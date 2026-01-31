@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'requests_service.dart';
 import 'request_create_page.dart';
+import 'request_details_page.dart';
+import 'notifications_page.dart';
 
 class RequestsPage extends StatefulWidget {
   const RequestsPage({super.key});
@@ -38,26 +41,43 @@ class _RequestsPageState extends State<RequestsPage> {
     }
   }
 
+  Future<void> _openCreate() async {
+    final created = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RequestCreatePage()),
+    );
+    if (created == true) _load();
+  }
+
+  void _openNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Requests"),
         actions: [
+          // 🔔 Notifications button
+          IconButton(
+            onPressed: _openNotifications,
+            icon: const Icon(Icons.notifications),
+            tooltip: "Notifications",
+          ),
+          // 🔄 Refresh button
           IconButton(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
+            tooltip: "Refresh",
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final created = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RequestCreatePage()),
-          );
-          if (created == true) _load();
-        },
+        onPressed: _openCreate,
         child: const Icon(Icons.add),
       ),
       body: _loading
@@ -73,12 +93,20 @@ class _RequestsPageState extends State<RequestsPage> {
           final r = _requests[index] as Map<String, dynamic>;
           final title = r["title"]?.toString() ?? "Untitled";
           final status = r["status"]?.toString() ?? "-";
-          final id = r["id"]?.toString() ?? "-";
+          final id = r["id"] ?? "-";
 
           return ListTile(
             title: Text(title),
             subtitle: Text("Status: $status"),
             trailing: Text("#$id"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RequestDetailsPage(request: r),
+                ),
+              );
+            },
           );
         },
       ),
