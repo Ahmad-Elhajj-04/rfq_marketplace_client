@@ -18,7 +18,6 @@ class LandingPage extends StatelessWidget {
                 children: [
                   const SizedBox(height: 16),
 
-                  // App Title
                   const Text(
                     "RFQ Marketplace",
                     textAlign: TextAlign.center,
@@ -26,7 +25,6 @@ class LandingPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  // Subtitle
                   const Text(
                     "Post requests, receive quotations, and choose the best offer — in real time.",
                     textAlign: TextAlign.center,
@@ -35,16 +33,11 @@ class LandingPage extends StatelessWidget {
 
                   const SizedBox(height: 26),
 
-                  // User button
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Next branch: route to login/register user
-                        // Navigator.pushNamed(context, "/login?role=user");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Next: User Login/Register")),
-                        );
+                        Navigator.pushNamed(context, "/login");
                       },
                       child: const Text("Continue as User"),
                     ),
@@ -52,16 +45,11 @@ class LandingPage extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // Company button
                   SizedBox(
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        // Next branch: route to login/register company
-                        // Navigator.pushNamed(context, "/login?role=company");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Next: Company Login/Register")),
-                        );
+                        Navigator.pushNamed(context, "/login");
                       },
                       child: const Text("Continue as Company"),
                     ),
@@ -69,20 +57,15 @@ class LandingPage extends StatelessWidget {
 
                   const SizedBox(height: 18),
 
-                  // Guest/browse option (optional)
                   TextButton(
                     onPressed: () {
-                      // Next branch: browse offers/requests as guest (optional)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Next: Guest Browse (optional)")),
-                      );
+                      Navigator.pushNamed(context, "/register");
                     },
-                    child: const Text("Browse as Guest"),
+                    child: const Text("Create account"),
                   ),
 
                   const SizedBox(height: 18),
 
-                  // Footer hint
                   const Text(
                     "Tip: Companies subscribe to categories to get instant RFQ alerts.",
                     textAlign: TextAlign.center,

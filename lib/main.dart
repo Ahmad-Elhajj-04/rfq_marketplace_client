@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'landing_page.dart';
+import 'login_page.dart';
+import 'register_page.dart';
 
-class LandingPage extends StatelessWidget {
-  const LandingPage({super.key});
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Landing Page',
-          style: TextStyle(fontSize: 24),
-        ),
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      initialRoute: "/",
+      routes: {
+        "/": (_) => const LandingPage(),
+        "/login": (_) => const LoginPage(),
+        "/register": (_) => const RegisterPage(),
+      },
     );
   }
 }
