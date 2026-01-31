@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'landing_page.dart';
 import 'login_page.dart';
 import 'register_page.dart';
@@ -13,10 +14,28 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: "/",
-      routes: {
-        "/": (_) => const LandingPage(),
-        "/login": (_) => const LoginPage(),
-        "/register": (_) => const RegisterPage(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case "/":
+            return MaterialPageRoute(builder: (_) => const LandingPage());
+
+          case "/login":
+            final expectedRole = settings.arguments as String?;
+            return MaterialPageRoute(
+              builder: (_) => LoginPage(expectedRole: expectedRole),
+            );
+
+          case "/register":
+          // optional: you can also pass role here later
+            return MaterialPageRoute(builder: (_) => const RegisterPage());
+
+          default:
+            return MaterialPageRoute(
+              builder: (_) => const Scaffold(
+                body: Center(child: Text("Page not found")),
+              ),
+            );
+        }
       },
     );
   }

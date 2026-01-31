@@ -12,4 +12,8 @@ class RequestsService {
     final res = await _api.post("/v1/requests", payload);
     return res["request"] as Map<String, dynamic>;
   }
+  Future<Map<String, dynamic>> getRequest(int id) async {
+    final res = await _api.get("/v1/requests/$id");
+    return res["request"] as Map<String, dynamic>;
+  }
 }
