@@ -7,6 +7,7 @@ import 'package:rfq_marketplace_flutter/shared/session.dart';
 
 import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/explore_requests_page.dart';
+import 'package:rfq_marketplace_flutter/subscriptions/presentation/subscriptions_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -46,9 +47,7 @@ class _LandingPageState extends State<LandingPage> {
 
     final token = await TokenStore.get();
     if (token == null) {
-      Session.userId = null;
-      Session.role = null;
-      Session.name = null;
+      Session.clear();
       setState(() => _checkingAuth = false);
       return;
     }
@@ -56,15 +55,12 @@ class _LandingPageState extends State<LandingPage> {
     try {
       final res = await _api.get("/v1/auth/me");
       final user = res["user"] as Map<String, dynamic>;
-
       Session.userId = user["id"] as int;
       Session.role = (user["role"] ?? "").toString();
       Session.name = (user["name"] ?? "").toString();
     } catch (_) {
       await TokenStore.clear();
-      Session.userId = null;
-      Session.role = null;
-      Session.name = null;
+      Session.clear();
     }
 
     if (mounted) setState(() => _checkingAuth = false);
@@ -72,9 +68,7 @@ class _LandingPageState extends State<LandingPage> {
 
   Future<void> _logout() async {
     await TokenStore.clear();
-    Session.userId = null;
-    Session.role = null;
-    Session.name = null;
+    Session.clear();
     if (mounted) setState(() {});
   }
 
@@ -83,35 +77,23 @@ class _LandingPageState extends State<LandingPage> {
       context: context,
       position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
       items: [
-        PopupMenuItem<String>(
-          value: "role",
-          child: Text("Role: ${Session.role ?? "-"}"),
-        ),
-        const PopupMenuItem<String>(
-          value: "logout",
-          child: Text("Logout"),
-        ),
+        PopupMenuItem<String>(value: "role", child: Text("Role: ${Session.role ?? "-"}")),
+        const PopupMenuItem<String>(value: "logout", child: Text("Logout")),
       ],
     );
 
-    if (selected == "logout") {
-      _logout();
-    }
+    if (selected == "logout") _logout();
   }
 
-  void _openUserRequests() {
-    Navigator.pushNamed(context, "/requests");
-  }
-
-  void _openCompanyBrowse() {
-    Navigator.pushNamed(context, "/company-requests");
-  }
+  void _openUserRequests() => Navigator.pushNamed(context, "/requests");
+  void _openCompanyBrowse() => Navigator.pushNamed(context, "/company-requests");
 
   Future<void> _openCreateRequest() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RequestCreatePage()),
-    );
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestCreatePage()));
+  }
+
+  Future<void> _openSubscriptions() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsPage()));
   }
 
   void _openCategory(_CardItem c) {
@@ -137,7 +119,7 @@ class _LandingPageState extends State<LandingPage> {
     if (w >= 1050) columns = 4;
     if (w >= 1350) columns = 5;
 
-    final isLoggedIn = Session.userId != null && Session.role != null;
+    final isLoggedIn = Session.isLoggedIn;
 
     return Scaffold(
       body: SafeArea(
@@ -161,10 +143,7 @@ class _LandingPageState extends State<LandingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(
-                      height: w > 900 ? 290 : 220,
-                      child: _HeroSection(),
-                    ),
+                    SizedBox(height: w > 900 ? 290 : 220, child: _HeroSection()),
                     const SizedBox(height: 14),
 
                     if (isLoggedIn) ...[
@@ -173,14 +152,12 @@ class _LandingPageState extends State<LandingPage> {
                         onUserRequests: _openUserRequests,
                         onCreateRequest: _openCreateRequest,
                         onCompanyBrowse: _openCompanyBrowse,
+                        onSubscriptions: _openSubscriptions, // ✅ new
                       ),
                       const SizedBox(height: 18),
                     ],
 
-                    const Text(
-                      "Explore categories",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    const Text("Explore categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
 
                     GridView.builder(
@@ -199,7 +176,7 @@ class _LandingPageState extends State<LandingPage> {
                           title: c.title,
                           subtitle: c.subtitle,
                           assetPath: c.assetPath,
-                          onTap: () => _openCategory(c), // ✅ real explore
+                          onTap: () => _openCategory(c),
                         );
                       },
                     ),
@@ -213,6 +190,8 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 }
+
+// ---------------- Top Bar ----------------
 
 class _TopBar extends StatelessWidget {
   final TextEditingController controller;
@@ -244,9 +223,7 @@ class _TopBar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.08))),
-      ),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.08)))),
       child: Row(
         children: [
           const Icon(Icons.storefront, size: 22),
@@ -263,32 +240,25 @@ class _TopBar extends StatelessWidget {
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.black.withOpacity(0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: BorderSide.none),
               ),
             ),
           ),
           const SizedBox(width: 12),
 
-          if (isLoading) const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+          if (isLoading)
+            const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
 
-          if (!isLoading && !isLoggedIn) ...[
-            if (w > 700) ...[
-              OutlinedButton(onPressed: onLoginUser, child: const Text("Login as User")),
-              const SizedBox(width: 8),
-              OutlinedButton(onPressed: onLoginCompany, child: const Text("Login as Company")),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: onSignup,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
-                child: const Text("Sign up"),
-              ),
-            ] else ...[
-              IconButton(onPressed: onLoginUser, icon: const Icon(Icons.login)),
-            ],
+          if (!isLoading && !isLoggedIn && w > 700) ...[
+            OutlinedButton(onPressed: onLoginUser, child: const Text("Login as User")),
+            const SizedBox(width: 8),
+            OutlinedButton(onPressed: onLoginCompany, child: const Text("Login as Company")),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: onSignup,
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
+              child: const Text("Sign up"),
+            ),
           ],
 
           if (!isLoading && isLoggedIn) ...[
@@ -307,6 +277,8 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+// ---------------- Hero ----------------
+
 class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -315,30 +287,19 @@ class _HeroSection extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            "assets/images/hero.JPG",
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: Colors.black12,
-              child: const Center(child: Icon(Icons.image, size: 64)),
-            ),
-          ),
+          Image.asset("assets/images/hero.JPG", fit: BoxFit.cover),
           Container(color: Colors.black.withOpacity(0.45)),
-          Padding(
-            padding: const EdgeInsets.all(18),
+          const Padding(
+            padding: EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Spacer(),
-                Text(
-                  "Request. Quote. Deliver.",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
-                ),
+                Text("Request. Quote. Deliver.",
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
                 SizedBox(height: 8),
-                Text(
-                  "Click a category to browse real requests.",
-                  style: TextStyle(color: Colors.white70, height: 1.3),
-                ),
+                Text("Click a category to browse real requests.",
+                    style: TextStyle(color: Colors.white70, height: 1.3)),
                 Spacer(),
               ],
             ),
@@ -349,17 +310,21 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
+// ---------------- Logged-in actions ----------------
+
 class _LandingActions extends StatelessWidget {
   final String role;
   final VoidCallback onUserRequests;
   final Future<void> Function() onCreateRequest;
   final VoidCallback onCompanyBrowse;
+  final Future<void> Function() onSubscriptions;
 
   const _LandingActions({
     required this.role,
     required this.onUserRequests,
     required this.onCreateRequest,
     required this.onCompanyBrowse,
+    required this.onSubscriptions,
   });
 
   @override
@@ -373,29 +338,28 @@ class _LandingActions extends StatelessWidget {
               child: const Text("Browse Requests"),
             ),
           ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => onSubscriptions(),
+              child: const Text("Subscriptions"),
+            ),
+          ),
         ],
       );
     }
 
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: onUserRequests,
-            child: const Text("My Requests"),
-          ),
-        ),
+        Expanded(child: OutlinedButton(onPressed: onUserRequests, child: const Text("My Requests"))),
         const SizedBox(width: 10),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () => onCreateRequest(),
-            child: const Text("Create Request"),
-          ),
-        ),
+        Expanded(child: ElevatedButton(onPressed: () => onCreateRequest(), child: const Text("Create Request"))),
       ],
     );
   }
 }
+
+// ---------------- Cards ----------------
 
 class _ImageCard extends StatelessWidget {
   final String title;
@@ -419,10 +383,7 @@ class _ImageCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12),
-            borderRadius: BorderRadius.circular(16),
-          ),
+          decoration: BoxDecoration(border: Border.all(color: Colors.black12), borderRadius: BorderRadius.circular(16)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Column(
@@ -430,14 +391,7 @@ class _ImageCard extends StatelessWidget {
               children: [
                 AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: Image.asset(
-                    assetPath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.black12,
-                      child: const Center(child: Icon(Icons.image)),
-                    ),
-                  ),
+                  child: Image.asset(assetPath, fit: BoxFit.cover),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(12),
