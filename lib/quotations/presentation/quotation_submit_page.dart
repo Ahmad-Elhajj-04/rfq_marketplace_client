@@ -12,13 +12,12 @@ class QuotationSubmitPage extends StatefulWidget {
 class _QuotationSubmitPageState extends State<QuotationSubmitPage> {
   final _service = QuotationsService();
   final _formKey = GlobalKey<FormState>();
-
-  final _pricePerUnit = TextEditingController(text: "300");
-  final _totalPrice = TextEditingController(text: "600");
-  final _deliveryDays = TextEditingController(text: "3");
-  final _deliveryCost = TextEditingController(text: "30");
-  final _paymentTerms = TextEditingController(text: "Cash on delivery");
-  final _notes = TextEditingController(text: "Best quality");
+  final _pricePerUnit = TextEditingController();
+  final _totalPrice = TextEditingController();
+  final _deliveryDays = TextEditingController();
+  final _deliveryCost = TextEditingController();
+  final _paymentTerms = TextEditingController();
+  final _notes = TextEditingController();
 
   bool _loading = false;
   String? _error;
@@ -34,6 +33,8 @@ class _QuotationSubmitPageState extends State<QuotationSubmitPage> {
     super.dispose();
   }
 
+  double _parseNum(String v) => double.parse(v.trim());
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -45,13 +46,13 @@ class _QuotationSubmitPageState extends State<QuotationSubmitPage> {
     try {
       final payload = {
         "request_id": widget.requestId,
-        "price_per_unit": double.parse(_pricePerUnit.text.trim()),
-        "total_price": double.parse(_totalPrice.text.trim()),
+        "price_per_unit": _parseNum(_pricePerUnit.text),
+        "total_price": _parseNum(_totalPrice.text),
         "delivery_days": int.parse(_deliveryDays.text.trim()),
-        "delivery_cost": double.parse(_deliveryCost.text.trim()),
+        "delivery_cost": _parseNum(_deliveryCost.text),
         "payment_terms": _paymentTerms.text.trim(),
         "notes": _notes.text.trim(),
-        "valid_until": "2026-03-01 12:00:00"
+        "valid_until": DateTime.now().add(const Duration(days: 10)).toIso8601String(),
       };
 
       await _service.submitQuotation(payload);
@@ -64,65 +65,114 @@ class _QuotationSubmitPageState extends State<QuotationSubmitPage> {
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      setState(() => _loading = false);
     }
+  }
+
+  String? _requiredNumber(String? v) {
+    final t = (v ?? "").trim();
+    if (t.isEmpty) return "Required";
+    final x = double.tryParse(t);
+    if (x == null || x < 0) return "Enter a valid number";
+    return null;
+  }
+
+  String? _requiredInt(String? v) {
+    final t = (v ?? "").trim();
+    if (t.isEmpty) return "Required";
+    final x = int.tryParse(t);
+    if (x == null || x < 0) return "Enter a valid number";
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Submit Quotation (Request #${widget.requestId})")),
+      appBar: AppBar(
+        title: const Text("Submit Quotation"),
+      ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Form(
               key: _formKey,
               child: ListView(
                 children: [
                   TextFormField(
                     controller: _pricePerUnit,
-                    decoration: const InputDecoration(labelText: "Price per unit", border: OutlineInputBorder()),
                     keyboardType: TextInputType.number,
-                    validator: (v) => (double.tryParse((v ?? "").trim()) == null) ? "Enter number" : null,
+                    decoration: const InputDecoration(
+                      labelText: "Price per unit",
+                      hintText: "e.g. 300",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: _requiredNumber,
                   ),
                   const SizedBox(height: 12),
+
                   TextFormField(
                     controller: _totalPrice,
-                    decoration: const InputDecoration(labelText: "Total price", border: OutlineInputBorder()),
                     keyboardType: TextInputType.number,
-                    validator: (v) => (double.tryParse((v ?? "").trim()) == null) ? "Enter number" : null,
+                    decoration: const InputDecoration(
+                      labelText: "Total price",
+                      hintText: "e.g. 600",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: _requiredNumber,
                   ),
                   const SizedBox(height: 12),
+
                   TextFormField(
                     controller: _deliveryDays,
-                    decoration: const InputDecoration(labelText: "Delivery days", border: OutlineInputBorder()),
                     keyboardType: TextInputType.number,
-                    validator: (v) => (int.tryParse((v ?? "").trim()) == null) ? "Enter integer" : null,
+                    decoration: const InputDecoration(
+                      labelText: "Delivery days",
+                      hintText: "e.g. 3",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: _requiredInt,
                   ),
                   const SizedBox(height: 12),
+
                   TextFormField(
                     controller: _deliveryCost,
-                    decoration: const InputDecoration(labelText: "Delivery cost", border: OutlineInputBorder()),
                     keyboardType: TextInputType.number,
-                    validator: (v) => (double.tryParse((v ?? "").trim()) == null) ? "Enter number" : null,
+                    decoration: const InputDecoration(
+                      labelText: "Delivery cost",
+                      hintText: "e.g. 30",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: _requiredNumber,
                   ),
                   const SizedBox(height: 12),
+
                   TextFormField(
                     controller: _paymentTerms,
-                    decoration: const InputDecoration(labelText: "Payment terms", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: "Payment terms",
+                      hintText: "e.g. Cash on delivery",
+                      border: OutlineInputBorder(),
+                    ),
                     validator: (v) => (v ?? "").trim().isEmpty ? "Required" : null,
                   ),
                   const SizedBox(height: 12),
+
                   TextFormField(
                     controller: _notes,
-                    maxLines: 3,
-                    decoration: const InputDecoration(labelText: "Notes", border: OutlineInputBorder()),
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: "Notes",
+                      hintText: "Any extra details…",
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
+
                   if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 12),
+
                   SizedBox(
                     height: 48,
                     child: ElevatedButton(

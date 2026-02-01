@@ -1,39 +1,44 @@
 import 'package:flutter/material.dart';
 
-import 'package:rfq_marketplace_flutter/requests/data/requests_service.dart';
-import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
+import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/request_details_page.dart';
 import 'package:rfq_marketplace_flutter/notifications/presentation/notifications_page.dart';
-import 'package:rfq_marketplace_flutter/shared/session.dart';
-import 'package:rfq_marketplace_flutter/core/ui/profile_avatar.dart';
+import 'package:rfq_marketplace_flutter/subscriptions/presentation/subscriptions_page.dart';
+import 'package:rfq_marketplace_flutter/quotations/presentation/my_quotations_page.dart';
 
-class RequestsPage extends StatefulWidget {
-  const RequestsPage({super.key});
+class CompanyRequestsPage extends StatefulWidget {
+  const CompanyRequestsPage({super.key});
 
   @override
-  State<RequestsPage> createState() => _RequestsPageState();
+  State<CompanyRequestsPage> createState() => _CompanyRequestsPageState();
 }
 
-class _RequestsPageState extends State<RequestsPage> {
-  final _service = RequestsService();
+class _CompanyRequestsPageState extends State<CompanyRequestsPage> {
+  final _api = ApiClient();
 
   bool _loading = true;
   String? _error;
   List<dynamic> _requests = [];
 
-  // Fallback map if request doesn't include category_type yet
   static const Map<int, String> _categoryTypeById = {
-    1: "material", // Iron
-    2: "material", // Cement
-    3: "service",  // Electrical Services
-    4: "service",  // Logistics
-    5: "service",  // Plumbing
+    1: "material",
+    2: "material",
+    3: "service",
+    4: "service",
+    5: "service",
   };
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  String _getCategoryType(Map<String, dynamic> r) {
+    final t = r["category_type"];
+    if (t != null) return t.toString();
+    final cid = (r["category_id"] as int?) ?? 0;
+    return _categoryTypeById[cid] ?? "material";
   }
 
   Future<void> _load() async {
@@ -43,8 +48,8 @@ class _RequestsPageState extends State<RequestsPage> {
     });
 
     try {
-      final items = await _service.myRequests();
-      setState(() => _requests = items);
+      final res = await _api.get("/v1/requests");
+      setState(() => _requests = (res["requests"] as List<dynamic>));
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -52,59 +57,37 @@ class _RequestsPageState extends State<RequestsPage> {
     }
   }
 
-  Future<void> _openCreate() async {
-    final created = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const RequestCreatePage()),
-    );
-    if (created == true) _load();
-  }
-
   void _openNotifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const NotificationsPage()),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
   }
 
-  String _getCategoryType(Map<String, dynamic> r) {
-    // If backend adds it later, use it directly
-    final t = r["category_type"];
-    if (t != null) return t.toString();
-    final cid = (r["category_id"] as int?) ?? 0;
-    return _categoryTypeById[cid] ?? "material";
+  Future<void> _openSubscriptions() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsPage()));
+    _load();
+  }
+
+  void _openMyQuotations() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyQuotationsPage()));
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayName = (Session.name ?? "User").trim();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Requests"),
+        title: const Text("Available Requests"),
         actions: [
+          IconButton(onPressed: _openMyQuotations, icon: const Icon(Icons.receipt_long), tooltip: "My Quotations"),
+          IconButton(onPressed: _openSubscriptions, icon: const Icon(Icons.tune), tooltip: "Subscriptions"),
           IconButton(onPressed: _openNotifications, icon: const Icon(Icons.notifications)),
           IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-          InkWell(
-            onTap: () {},
-            borderRadius: BorderRadius.circular(999),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: ProfileAvatar(name: displayName),
-            ),
-          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreate,
-        child: const Icon(Icons.add),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(child: Text(_error!))
           : _requests.isEmpty
-          ? const Center(child: Text("No requests yet. Tap + to create one."))
+          ? const Center(child: Text("No matching requests.\nSubscribe to categories to receive RFQs."))
           : ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: _requests.length,
@@ -113,7 +96,7 @@ class _RequestsPageState extends State<RequestsPage> {
           final type = _getCategoryType(r);
           final isMaterial = type == "material";
 
-          return _RequestCard(
+          return _CompanyRequestCard(
             request: r,
             isMaterial: isMaterial,
             onTap: () {
@@ -129,12 +112,12 @@ class _RequestsPageState extends State<RequestsPage> {
   }
 }
 
-class _RequestCard extends StatelessWidget {
+class _CompanyRequestCard extends StatelessWidget {
   final Map<String, dynamic> request;
   final bool isMaterial;
   final VoidCallback onTap;
 
-  const _RequestCard({
+  const _CompanyRequestCard({
     required this.request,
     required this.isMaterial,
     required this.onTap,
@@ -160,18 +143,13 @@ class _RequestCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title + badge
               Row(
                 children: [
-                  Expanded(
-                    child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
+                  Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                   _TypeBadge(isMaterial: isMaterial),
                 ],
               ),
               const SizedBox(height: 8),
-
-              // Material shows qty+unit; service hides it
               if (isMaterial) ...[
                 Text("Quantity: $qty $unit"),
                 const SizedBox(height: 4),
@@ -179,10 +157,8 @@ class _RequestCard extends StatelessWidget {
                 const Text("Service Request"),
                 const SizedBox(height: 4),
               ],
-
               Text("City: $city"),
               const SizedBox(height: 6),
-
               _StatusLine(status: status),
             ],
           ),
