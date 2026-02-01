@@ -24,14 +24,14 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _loading = false;
   String? _error;
 
-  late String _role; // current selected role
+  late String _role;
 
   bool get isCompany => _role == "company";
 
   @override
   void initState() {
     super.initState();
-    _role = widget.role; // default from landing/routing
+    _role = widget.role;
   }
 
   @override
@@ -82,8 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      // ✅ Stay on landing: pop back to root
-      Navigator.popUntil(context, (route) => route.isFirst);
+      Navigator.pushNamedAndRemoveUntil(context, "/", (_) => false);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -124,34 +123,23 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       TextFormField(
                         controller: _name,
-                        decoration: const InputDecoration(
-                          labelText: "Name",
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) =>
-                        (v ?? "").trim().isEmpty ? "Name is required" : null,
+                        decoration: const InputDecoration(labelText: "Name", border: OutlineInputBorder()),
+                        validator: (v) => (v ?? "").trim().isEmpty ? "Name is required" : null,
                       ),
                       const SizedBox(height: 12),
 
                       if (isCompany) ...[
                         TextFormField(
                           controller: _companyName,
-                          decoration: const InputDecoration(
-                            labelText: "Company Name",
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (v) =>
-                          (v ?? "").trim().isEmpty ? "Company Name is required" : null,
+                          decoration: const InputDecoration(labelText: "Company Name", border: OutlineInputBorder()),
+                          validator: (v) => (v ?? "").trim().isEmpty ? "Company Name is required" : null,
                         ),
                         const SizedBox(height: 12),
                       ],
 
                       TextFormField(
                         controller: _email,
-                        decoration: const InputDecoration(
-                          labelText: "Email",
-                          border: OutlineInputBorder(),
-                        ),
+                        decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
                         validator: (v) {
                           final x = (v ?? "").trim();
                           if (x.isEmpty) return "Email is required";
@@ -164,30 +152,21 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: _password,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: "Password",
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) =>
-                        (v ?? "").isEmpty ? "Password is required" : null,
+                        decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+                        validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
                       ),
 
                       const SizedBox(height: 12),
-                      if (_error != null)
-                        Text(_error!, style: const TextStyle(color: Colors.red)),
-
+                      if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 12),
+
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
                           onPressed: _loading ? null : _submit,
                           child: _loading
-                              ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Text("Create account"),
                         ),
                       ),

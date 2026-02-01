@@ -6,7 +6,7 @@ import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 import 'package:rfq_marketplace_flutter/shared/session.dart';
 
 class LoginPage extends StatefulWidget {
-  final String? expectedRole;
+  final String? expectedRole; // "user" or "company"
   const LoginPage({super.key, this.expectedRole});
 
   @override
@@ -57,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
       final user = res["user"] as Map<String, dynamic>;
       final role = (user["role"] ?? "").toString();
 
+      // Enforce role from landing choice
       if (widget.expectedRole != null && role != widget.expectedRole) {
         setState(() {
           _error = "This account is not a ${widget.expectedRole} account.";
@@ -64,16 +65,16 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      // ✅ Save token + session
       await TokenStore.save(token);
-
-      Session.userId = user["id"] as int;
+      Session.userId = (user["id"] as int);
       Session.role = role;
       Session.name = (user["name"] ?? "").toString();
 
       if (!mounted) return;
 
-      // ✅ Stay on landing: pop back to root
-      Navigator.popUntil(context, (route) => route.isFirst);
+      // ✅ Go back to Landing (root) and clear navigation stack
+      Navigator.pushNamedAndRemoveUntil(context, "/", (_) => false);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -137,6 +138,12 @@ class _LoginPageState extends State<LoginPage> {
                             ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Text("Login"),
                       ),
+                    ),
+
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, "/register", arguments: "user"),
+                      child: const Text("Create account"),
                     ),
                   ],
                 ),
