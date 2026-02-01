@@ -3,8 +3,10 @@
 import 'package:rfq_marketplace_flutter/app/landing_page.dart';
 import 'package:rfq_marketplace_flutter/features/auth/presentation/login_page.dart';
 import 'package:rfq_marketplace_flutter/features/auth/presentation/register_page.dart';
+
 import 'package:rfq_marketplace_flutter/requests/presentation/requests_page.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/company_requests_page.dart';
+
 import 'package:rfq_marketplace_flutter/notifications/presentation/notifications_page.dart';
 
 class AppRoutes {

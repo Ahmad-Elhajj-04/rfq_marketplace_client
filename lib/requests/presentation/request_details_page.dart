@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:rfq_marketplace_flutter/shared/session.dart';
 import 'package:rfq_marketplace_flutter/requests/data/requests_service.dart';
 import 'package:rfq_marketplace_flutter/quotations/presentation/quotation_submit_page.dart';
@@ -87,12 +86,14 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
               const SizedBox(height: 18),
 
               if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-              if (_loading) const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator())),
+              if (_loading)
+                const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator())),
 
               if (!isLoggedIn)
                 const Text("Login to submit a quotation or manage requests.")
               else ...[
-                if (isCompany) ...[
+                // ✅ Company: only submit quotation
+                if (isCompany)
                   SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
@@ -106,18 +107,8 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                       label: const Text("Submit Quotation"),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  OutlinedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => QuotationsPage(requestId: id)),
-                      );
-                    },
-                    child: const Text("View Quotations (restricted)"),
-                  ),
-                ],
 
+                // ✅ User: view quotations
                 if (isUser) ...[
                   SizedBox(
                     height: 48,
@@ -135,6 +126,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                   const SizedBox(height: 10),
                 ],
 
+                // ✅ User cancel
                 if (canCancel)
                   SizedBox(
                     height: 48,

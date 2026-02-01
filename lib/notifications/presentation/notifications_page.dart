@@ -82,7 +82,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               children: [
                 Expanded(
                   child: Text(
-                    _unreadOnly ? "Showing: Unread only" : "Showing: All",
+                    _unreadOnly ? "Showing: Showing unread requests; click to mark as read and update your list." : "Showing: All",
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),

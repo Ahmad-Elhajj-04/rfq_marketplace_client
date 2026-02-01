@@ -4,7 +4,6 @@ import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
 import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 import 'package:rfq_marketplace_flutter/core/ui/profile_avatar.dart';
 import 'package:rfq_marketplace_flutter/shared/session.dart';
-
 import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/explore_requests_page.dart';
 import 'package:rfq_marketplace_flutter/subscriptions/presentation/subscriptions_page.dart';
@@ -20,8 +19,6 @@ class LandingPage extends StatefulWidget {
 
 class _LandingPageState extends State<LandingPage> {
   final _api = ApiClient();
-  final _search = TextEditingController();
-
   bool _checkingAuth = true;
 
   final List<_CardItem> _cards = const [
@@ -36,12 +33,6 @@ class _LandingPageState extends State<LandingPage> {
   void initState() {
     super.initState();
     _bootstrapSession();
-  }
-
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
   }
 
   Future<void> _bootstrapSession() async {
@@ -180,21 +171,22 @@ class _LandingPageState extends State<LandingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(
-              controller: _search,
+            _TopNavBar(
               isLoading: _checkingAuth,
               isLoggedIn: isLoggedIn,
               displayName: (Session.name ?? "User").trim(),
-              onExplore: () {},
-
-              // auth actions
               onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user").then((_) => _bootstrapSession()),
               onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company").then((_) => _bootstrapSession()),
               onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user").then((_) => _bootstrapSession()),
-
-              // logged-in actions
               onNotifications: _openNotifications,
               onAvatarTap: _openProfileMenu,
+              // nav actions:
+              onHome: () {},
+              onMyRequests: _openUserRequests,
+              onCreateRequest: _openCreateRequest,
+              onBrowseRequests: _openCompanyBrowse,
+              onSubscriptions: _openSubscriptions,
+              onMyQuotations: _openMyQuotations,
             ),
 
             Expanded(
@@ -240,13 +232,20 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  final TextEditingController controller;
+
+class _TopNavBar extends StatelessWidget {
   final bool isLoading;
   final bool isLoggedIn;
   final String displayName;
 
-  final VoidCallback onExplore;
+  final VoidCallback onHome;
+
+  final VoidCallback onMyRequests;
+  final Future<void> Function() onCreateRequest;
+
+  final VoidCallback onBrowseRequests;
+  final Future<void> Function() onSubscriptions;
+  final VoidCallback onMyQuotations;
 
   final VoidCallback onLoginUser;
   final VoidCallback onLoginCompany;
@@ -255,12 +254,16 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onNotifications;
   final VoidCallback onAvatarTap;
 
-  const _TopBar({
-    required this.controller,
+  const _TopNavBar({
     required this.isLoading,
     required this.isLoggedIn,
     required this.displayName,
-    required this.onExplore,
+    required this.onHome,
+    required this.onMyRequests,
+    required this.onCreateRequest,
+    required this.onBrowseRequests,
+    required this.onSubscriptions,
+    required this.onMyQuotations,
     required this.onLoginUser,
     required this.onLoginCompany,
     required this.onSignup,
@@ -270,6 +273,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = Session.role;
     final w = MediaQuery.of(context).size.width;
 
     return Container(
@@ -280,26 +284,23 @@ class _TopBar extends StatelessWidget {
           const Icon(Icons.storefront, size: 22),
           const SizedBox(width: 8),
           const Text("RFQ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
 
-          TextButton(onPressed: onExplore, child: const Text("Explore")),
 
-          const SizedBox(width: 10),
+          TextButton(onPressed: onHome, child: const Text("Home")),
 
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: "Search for materials or services",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.black.withOpacity(0.04),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(999), borderSide: BorderSide.none),
-              ),
-            ),
-          ),
+          if (isLoggedIn && role == "user") ...[
+            TextButton(onPressed: onMyRequests, child: const Text("My Requests")),
+            TextButton(onPressed: () => onCreateRequest(), child: const Text("Create Request")),
+          ],
 
-          const SizedBox(width: 12),
+          if (isLoggedIn && role == "company") ...[
+            TextButton(onPressed: onBrowseRequests, child: const Text("Browse Requests")),
+            TextButton(onPressed: () => onSubscriptions(), child: const Text("Subscriptions")),
+            TextButton(onPressed: onMyQuotations, child: const Text("My Quotations")),
+          ],
+
+          const Spacer(),
 
           if (isLoading)
             const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
@@ -317,11 +318,7 @@ class _TopBar extends StatelessWidget {
           ],
 
           if (!isLoading && isLoggedIn) ...[
-            IconButton(
-              onPressed: onNotifications,
-              icon: const Icon(Icons.notifications),
-              tooltip: "Notifications",
-            ),
+            IconButton(onPressed: onNotifications, icon: const Icon(Icons.notifications)),
             const SizedBox(width: 4),
             InkWell(
               onTap: onAvatarTap,
@@ -359,7 +356,7 @@ class _HeroSection extends StatelessWidget {
                 Text("Request. Quote. Deliver.",
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
                 SizedBox(height: 8),
-                Text("Subscribe to categories to receive RFQs instantly.",
+                Text("Materials & Services marketplace with real-time RFQs.",
                     style: TextStyle(color: Colors.white70, height: 1.3)),
                 Spacer(),
               ],
