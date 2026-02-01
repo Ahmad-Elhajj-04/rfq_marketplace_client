@@ -8,6 +8,8 @@ import 'package:rfq_marketplace_flutter/shared/session.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
 import 'package:rfq_marketplace_flutter/requests/presentation/explore_requests_page.dart';
 import 'package:rfq_marketplace_flutter/subscriptions/presentation/subscriptions_page.dart';
+import 'package:rfq_marketplace_flutter/quotations/presentation/my_quotations_page.dart';
+import 'package:rfq_marketplace_flutter/notifications/presentation/notifications_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -26,8 +28,8 @@ class _LandingPageState extends State<LandingPage> {
     _CardItem("Iron Supply", "Materials", "assets/images/iron.JPG", 1),
     _CardItem("Cement Supply", "Materials", "assets/images/cement.JPG", 2),
     _CardItem("Electrical Services", "Service", "assets/images/electrical.JPG", 3),
-    _CardItem("Plumbing Services", "Service", "assets/images/plumbing.JPG", 4),
-    _CardItem("Logistics Delivery", "Service", "assets/images/logistics.JPG", 5),
+    _CardItem("Plumbing Services", "Service", "assets/images/plumbing.JPG", 5),
+    _CardItem("Logistics Delivery", "Service", "assets/images/logistics.JPG", 4),
   ];
 
   @override
@@ -72,28 +74,28 @@ class _LandingPageState extends State<LandingPage> {
     if (mounted) setState(() {});
   }
 
-  void _openProfileMenu() async {
-    final selected = await showMenu<String>(
-      context: context,
-      position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
-      items: [
-        PopupMenuItem<String>(value: "role", child: Text("Role: ${Session.role ?? "-"}")),
-        const PopupMenuItem<String>(value: "logout", child: Text("Logout")),
-      ],
-    );
-
-    if (selected == "logout") _logout();
-  }
-
-  void _openUserRequests() => Navigator.pushNamed(context, "/requests");
-  void _openCompanyBrowse() => Navigator.pushNamed(context, "/company-requests");
-
-  Future<void> _openCreateRequest() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestCreatePage()));
+  void _openNotifications() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
   }
 
   Future<void> _openSubscriptions() async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionsPage()));
+  }
+
+  void _openMyQuotations() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const MyQuotationsPage()));
+  }
+
+  void _openUserRequests() {
+    Navigator.pushNamed(context, "/requests");
+  }
+
+  void _openCompanyBrowse() {
+    Navigator.pushNamed(context, "/company-requests");
+  }
+
+  Future<void> _openCreateRequest() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestCreatePage()));
   }
 
   void _openCategory(_CardItem c) {
@@ -108,6 +110,59 @@ class _LandingPageState extends State<LandingPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _openProfileMenu() async {
+    final isUser = Session.role == "user";
+    final isCompany = Session.role == "company";
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
+      items: [
+        PopupMenuItem<String>(
+          value: "role",
+          enabled: false,
+          child: Text("Role: ${Session.role ?? "-"}"),
+        ),
+        if (isUser) const PopupMenuItem(value: "my_requests", child: Text("My Requests")),
+        if (isUser) const PopupMenuItem(value: "create_request", child: Text("Create Request")),
+        if (isCompany) const PopupMenuItem(value: "browse_requests", child: Text("Browse Requests")),
+        if (isCompany) const PopupMenuItem(value: "subscriptions", child: Text("Subscriptions")),
+        if (isCompany) const PopupMenuItem(value: "my_quotations", child: Text("My Quotations")),
+        const PopupMenuItem(value: "notifications", child: Text("Notifications")),
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: "logout", child: Text("Logout")),
+      ],
+    );
+
+    if (selected == null) return;
+
+    switch (selected) {
+      case "my_requests":
+        _openUserRequests();
+        break;
+      case "create_request":
+        await _openCreateRequest();
+        break;
+      case "browse_requests":
+        _openCompanyBrowse();
+        break;
+      case "subscriptions":
+        await _openSubscriptions();
+        break;
+      case "my_quotations":
+        _openMyQuotations();
+        break;
+      case "notifications":
+        _openNotifications();
+        break;
+      case "logout":
+        await _logout();
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -130,10 +185,15 @@ class _LandingPageState extends State<LandingPage> {
               isLoading: _checkingAuth,
               isLoggedIn: isLoggedIn,
               displayName: (Session.name ?? "User").trim(),
-              onSearch: () {},
+              onExplore: () {},
+
+              // auth actions
               onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user").then((_) => _bootstrapSession()),
               onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company").then((_) => _bootstrapSession()),
               onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user").then((_) => _bootstrapSession()),
+
+              // logged-in actions
+              onNotifications: _openNotifications,
               onAvatarTap: _openProfileMenu,
             ),
 
@@ -143,19 +203,8 @@ class _LandingPageState extends State<LandingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: w > 900 ? 290 : 220, child: _HeroSection()),
+                    SizedBox(height: w > 900 ? 290 : 220, child: const _HeroSection()),
                     const SizedBox(height: 14),
-
-                    if (isLoggedIn) ...[
-                      _LandingActions(
-                        role: Session.role!,
-                        onUserRequests: _openUserRequests,
-                        onCreateRequest: _openCreateRequest,
-                        onCompanyBrowse: _openCompanyBrowse,
-                        onSubscriptions: _openSubscriptions, // ✅ new
-                      ),
-                      const SizedBox(height: 18),
-                    ],
 
                     const Text("Explore categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
@@ -191,18 +240,19 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
-// ---------------- Top Bar ----------------
-
 class _TopBar extends StatelessWidget {
   final TextEditingController controller;
   final bool isLoading;
   final bool isLoggedIn;
   final String displayName;
 
-  final VoidCallback onSearch;
+  final VoidCallback onExplore;
+
   final VoidCallback onLoginUser;
   final VoidCallback onLoginCompany;
   final VoidCallback onSignup;
+
+  final VoidCallback onNotifications;
   final VoidCallback onAvatarTap;
 
   const _TopBar({
@@ -210,10 +260,11 @@ class _TopBar extends StatelessWidget {
     required this.isLoading,
     required this.isLoggedIn,
     required this.displayName,
-    required this.onSearch,
+    required this.onExplore,
     required this.onLoginUser,
     required this.onLoginCompany,
     required this.onSignup,
+    required this.onNotifications,
     required this.onAvatarTap,
   });
 
@@ -229,12 +280,15 @@ class _TopBar extends StatelessWidget {
           const Icon(Icons.storefront, size: 22),
           const SizedBox(width: 8),
           const Text("RFQ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+
+          TextButton(onPressed: onExplore, child: const Text("Explore")),
+
+          const SizedBox(width: 10),
 
           Expanded(
             child: TextField(
               controller: controller,
-              onSubmitted: (_) => onSearch(),
               decoration: InputDecoration(
                 hintText: "Search for materials or services",
                 prefixIcon: const Icon(Icons.search),
@@ -244,6 +298,7 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
+
           const SizedBox(width: 12),
 
           if (isLoading)
@@ -262,11 +317,17 @@ class _TopBar extends StatelessWidget {
           ],
 
           if (!isLoading && isLoggedIn) ...[
+            IconButton(
+              onPressed: onNotifications,
+              icon: const Icon(Icons.notifications),
+              tooltip: "Notifications",
+            ),
+            const SizedBox(width: 4),
             InkWell(
               onTap: onAvatarTap,
               borderRadius: BorderRadius.circular(999),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: ProfileAvatar(name: displayName),
               ),
             ),
@@ -277,9 +338,9 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ---------------- Hero ----------------
-
 class _HeroSection extends StatelessWidget {
+  const _HeroSection();
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -298,7 +359,7 @@ class _HeroSection extends StatelessWidget {
                 Text("Request. Quote. Deliver.",
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
                 SizedBox(height: 8),
-                Text("Click a category to browse real requests.",
+                Text("Subscribe to categories to receive RFQs instantly.",
                     style: TextStyle(color: Colors.white70, height: 1.3)),
                 Spacer(),
               ],
@@ -309,57 +370,6 @@ class _HeroSection extends StatelessWidget {
     );
   }
 }
-
-// ---------------- Logged-in actions ----------------
-
-class _LandingActions extends StatelessWidget {
-  final String role;
-  final VoidCallback onUserRequests;
-  final Future<void> Function() onCreateRequest;
-  final VoidCallback onCompanyBrowse;
-  final Future<void> Function() onSubscriptions;
-
-  const _LandingActions({
-    required this.role,
-    required this.onUserRequests,
-    required this.onCreateRequest,
-    required this.onCompanyBrowse,
-    required this.onSubscriptions,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (role == "company") {
-      return Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: onCompanyBrowse,
-              child: const Text("Browse Requests"),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => onSubscriptions(),
-              child: const Text("Subscriptions"),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(child: OutlinedButton(onPressed: onUserRequests, child: const Text("My Requests"))),
-        const SizedBox(width: 10),
-        Expanded(child: ElevatedButton(onPressed: () => onCreateRequest(), child: const Text("Create Request"))),
-      ],
-    );
-  }
-}
-
-// ---------------- Cards ----------------
 
 class _ImageCard extends StatelessWidget {
   final String title;
@@ -389,10 +399,7 @@ class _ImageCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: Image.asset(assetPath, fit: BoxFit.cover),
-                ),
+                AspectRatio(aspectRatio: 4 / 3, child: Image.asset(assetPath, fit: BoxFit.cover)),
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(

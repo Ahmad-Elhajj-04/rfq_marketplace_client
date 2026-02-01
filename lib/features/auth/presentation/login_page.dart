@@ -6,7 +6,7 @@ import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 import 'package:rfq_marketplace_flutter/shared/session.dart';
 
 class LoginPage extends StatefulWidget {
-  final String? expectedRole; // "user" or "company"
+  final String? expectedRole;
   const LoginPage({super.key, this.expectedRole});
 
   @override
@@ -56,24 +56,18 @@ class _LoginPageState extends State<LoginPage> {
       final token = res["token"] as String;
       final user = res["user"] as Map<String, dynamic>;
       final role = (user["role"] ?? "").toString();
-
-      // Enforce role from landing choice
       if (widget.expectedRole != null && role != widget.expectedRole) {
         setState(() {
           _error = "This account is not a ${widget.expectedRole} account.";
         });
         return;
       }
-
-      // ✅ Save token + session
       await TokenStore.save(token);
       Session.userId = (user["id"] as int);
       Session.role = role;
       Session.name = (user["name"] ?? "").toString();
 
       if (!mounted) return;
-
-      // ✅ Go back to Landing (root) and clear navigation stack
       Navigator.pushNamedAndRemoveUntil(context, "/", (_) => false);
     } catch (e) {
       setState(() => _error = e.toString());

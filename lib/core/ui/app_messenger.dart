@@ -6,7 +6,6 @@ GlobalKey<ScaffoldMessengerState>();
 void showBanner(String title, String message) {
   final ctx = messengerKey.currentContext;
   if (ctx == null) return;
-
   messengerKey.currentState?.hideCurrentSnackBar();
   messengerKey.currentState?.showSnackBar(
     SnackBar(

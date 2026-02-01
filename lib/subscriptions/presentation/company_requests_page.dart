@@ -66,7 +66,7 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
           _subByCategory.remove(categoryId);
         }
       }
-      setState(() {}); // refresh UI
+      setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed: $e")));
     }

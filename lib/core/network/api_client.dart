@@ -64,8 +64,6 @@ class ApiClient {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return data is Map<String, dynamic> ? data : {"data": data};
     }
-
-    // try to extract a helpful message
     final msg = (data is Map<String, dynamic> && data["message"] != null)
         ? data["message"].toString()
         : "Request failed (${res.statusCode})";

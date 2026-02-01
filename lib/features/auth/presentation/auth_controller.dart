@@ -29,8 +29,6 @@ class AuthController extends GetxController {
       Session.userId = user["id"] as int;
       Session.role = role;
       Session.name = (user["name"] ?? "").toString();
-
-      // back to landing
       Get.offAllNamed("/");
     } finally {
       isLoading.value = false;
