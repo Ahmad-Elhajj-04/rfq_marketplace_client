@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:rfq_marketplace_flutter/features/auth/data/auth_service.dart';
 import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 import 'package:rfq_marketplace_flutter/shared/session.dart';
-import 'package:rfq_marketplace_flutter/requests/presentation/requests_page.dart';
-import 'package:rfq_marketplace_flutter/requests/presentation/company_requests_page.dart';
 
 class RegisterPage extends StatefulWidget {
   final String role; // initial role: "user" or "company"
@@ -33,7 +31,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _role = widget.role;
+    _role = widget.role; // default from landing/routing
   }
 
   @override
@@ -80,20 +78,12 @@ class _RegisterPageState extends State<RegisterPage> {
       final user = res["user"] as Map<String, dynamic>;
       Session.userId = user["id"] as int;
       Session.role = (user["role"] ?? "").toString();
+      Session.name = (user["name"] ?? "").toString();
 
       if (!mounted) return;
 
-      if (Session.role == "company") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CompanyRequestsPage()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const RequestsPage()),
-        );
-      }
+      // ✅ Stay on landing: pop back to root
+      Navigator.popUntil(context, (route) => route.isFirst);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -125,7 +115,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ✅ Role toggle (clickable)
                       _RoleToggle(
                         role: _role,
                         onUser: () => _setRole("user"),
@@ -139,7 +128,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: "Name",
                           border: OutlineInputBorder(),
                         ),
-                        validator: (v) => (v ?? "").trim().isEmpty ? "Name is required" : null,
+                        validator: (v) =>
+                        (v ?? "").trim().isEmpty ? "Name is required" : null,
                       ),
                       const SizedBox(height: 12),
 
@@ -178,7 +168,8 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: "Password",
                           border: OutlineInputBorder(),
                         ),
-                        validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
+                        validator: (v) =>
+                        (v ?? "").isEmpty ? "Password is required" : null,
                       ),
 
                       const SizedBox(height: 12),
@@ -255,10 +246,7 @@ class _RoleToggle extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          "Sign up as",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        const Text("Sign up as", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Row(
           children: [

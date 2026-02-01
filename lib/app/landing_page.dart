@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:rfq_marketplace_flutter/core/network/api_client.dart';
+import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
+import 'package:rfq_marketplace_flutter/core/ui/profile_avatar.dart';
+import 'package:rfq_marketplace_flutter/shared/session.dart';
+
+// ✅ import the create request page
+import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
+
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
@@ -8,20 +16,120 @@ class LandingPage extends StatefulWidget {
 }
 
 class _LandingPageState extends State<LandingPage> {
+  final _api = ApiClient();
   final _search = TextEditingController();
 
+  bool _checkingAuth = true;
+
   final List<_CardItem> _cards = const [
-    _CardItem("Iron Supply", "Materials", "assets/images/iron.JPG"),
-    _CardItem("Cement Supply", "Materials", "assets/images/cement.JPG"),
-    _CardItem("Electrical Services", "Service", "assets/images/electrical.JPG"),
-    _CardItem("Plumbing Services", "Service", "assets/images/plumbing.JPG"),
-    _CardItem("Logistics Delivery", "Service", "assets/images/logistics.JPG"),
+    _CardItem("Iron Supply", "Materials", "assets/images/iron.JPG", 1),
+    _CardItem("Cement Supply", "Materials", "assets/images/cement.JPG", 2),
+    _CardItem("Electrical Services", "Service", "assets/images/electrical.JPG", 3),
+    _CardItem("Plumbing Services", "Service", "assets/images/plumbing.JPG", 4),
+    _CardItem("Logistics Delivery", "Service", "assets/images/logistics.JPG", 5),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrapSession();
+  }
 
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _bootstrapSession() async {
+    setState(() => _checkingAuth = true);
+
+    final token = await TokenStore.get();
+    if (token == null) {
+      Session.userId = null;
+      Session.role = null;
+      Session.name = null;
+      setState(() => _checkingAuth = false);
+      return;
+    }
+
+    try {
+      final res = await _api.get("/v1/auth/me");
+      final user = res["user"] as Map<String, dynamic>;
+
+      Session.userId = user["id"] as int;
+      Session.role = (user["role"] ?? "").toString();
+      Session.name = (user["name"] ?? "").toString();
+    } catch (_) {
+      await TokenStore.clear();
+      Session.userId = null;
+      Session.role = null;
+      Session.name = null;
+    }
+
+    if (mounted) setState(() => _checkingAuth = false);
+  }
+
+  Future<void> _logout() async {
+    await TokenStore.clear();
+    Session.userId = null;
+    Session.role = null;
+    Session.name = null;
+    if (mounted) setState(() {});
+  }
+
+  void _openProfileMenu() async {
+    final selected = await showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
+      items: [
+        PopupMenuItem<String>(
+          value: "role",
+          child: Text("Role: ${Session.role ?? "-"}"),
+        ),
+        const PopupMenuItem<String>(
+          value: "logout",
+          child: Text("Logout"),
+        ),
+      ],
+    );
+
+    if (selected == "logout") {
+      _logout();
+    }
+  }
+
+  void _openUserRequests() {
+    Navigator.pushNamed(context, "/requests");
+  }
+
+  void _openCompanyBrowse() {
+    Navigator.pushNamed(context, "/company-requests");
+  }
+
+  // ✅ FIX: go directly to Create Request page
+  Future<void> _openCreateRequest() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RequestCreatePage()),
+    );
+
+    // Optional: after returning, refresh landing session (not required)
+    // _bootstrapSession();
+  }
+
+  void _openCategory(_CardItem c) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExploreRequestsPage(
+          categoryId: c.categoryId,
+          title: c.title,
+          subtitle: c.subtitle,
+          assetPath: c.assetPath,
+        ),
+      ),
+    );
   }
 
   @override
@@ -33,21 +141,29 @@ class _LandingPageState extends State<LandingPage> {
     if (w >= 1050) columns = 4;
     if (w >= 1350) columns = 5;
 
+    final isLoggedIn = Session.userId != null && Session.role != null;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             _TopBar(
               controller: _search,
-              onExplore: () {},
+              isLoading: _checkingAuth,
+              isLoggedIn: isLoggedIn,
+              displayName: (Session.name ?? "User").trim(),
               onSearch: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Search: ${_search.text.trim()} (next feature)")),
                 );
               },
-              onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user"),
-              onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company"),
-              onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user"),
+              onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user")
+                  .then((_) => _bootstrapSession()),
+              onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company")
+                  .then((_) => _bootstrapSession()),
+              onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user")
+                  .then((_) => _bootstrapSession()),
+              onAvatarTap: _openProfileMenu,
             ),
 
             Expanded(
@@ -60,7 +176,17 @@ class _LandingPageState extends State<LandingPage> {
                       height: w > 900 ? 290 : 220,
                       child: _HeroSection(),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+
+                    if (isLoggedIn) ...[
+                      _LandingActions(
+                        role: Session.role!,
+                        onUserRequests: _openUserRequests,
+                        onCreateRequest: _openCreateRequest, // ✅ now opens form
+                        onCompanyBrowse: _openCompanyBrowse,
+                      ),
+                      const SizedBox(height: 18),
+                    ],
 
                     const Text(
                       "Explore categories",
@@ -84,11 +210,7 @@ class _LandingPageState extends State<LandingPage> {
                           title: c.title,
                           subtitle: c.subtitle,
                           assetPath: c.assetPath,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Open: ${c.title} (next feature)")),
-                            );
-                          },
+                          onTap: () => _openCategory(c),
                         );
                       },
                     ),
@@ -103,23 +225,30 @@ class _LandingPageState extends State<LandingPage> {
   }
 }
 
-// ---------------- UI Components ----------------
+// ---------------- Top Bar ----------------
 
 class _TopBar extends StatelessWidget {
   final TextEditingController controller;
+  final bool isLoading;
+  final bool isLoggedIn;
+  final String displayName;
+
   final VoidCallback onSearch;
-  final VoidCallback onExplore;
   final VoidCallback onLoginUser;
   final VoidCallback onLoginCompany;
   final VoidCallback onSignup;
+  final VoidCallback onAvatarTap;
 
   const _TopBar({
     required this.controller,
+    required this.isLoading,
+    required this.isLoggedIn,
+    required this.displayName,
     required this.onSearch,
-    required this.onExplore,
     required this.onLoginUser,
     required this.onLoginCompany,
     required this.onSignup,
+    required this.onAvatarTap,
   });
 
   @override
@@ -138,13 +267,6 @@ class _TopBar extends StatelessWidget {
           const Text("RFQ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(width: 12),
 
-          TextButton(
-            onPressed: onExplore,
-            child: const Text("Explore"),
-          ),
-
-          const SizedBox(width: 10),
-
           Expanded(
             child: TextField(
               controller: controller,
@@ -162,94 +284,40 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
 
-          // ✅ Top-right buttons only
-          if (w > 700) ...[
-            _PillButton(
-              text: "Login as User",
-              style: _PillStyle.light,
-              onPressed: onLoginUser,
+          if (isLoading)
+            const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+
+          if (!isLoading && !isLoggedIn) ...[
+            if (w > 700) ...[
+              OutlinedButton(onPressed: onLoginUser, child: const Text("Login as User")),
+              const SizedBox(width: 8),
+              OutlinedButton(onPressed: onLoginCompany, child: const Text("Login as Company")),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: onSignup,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
+                child: const Text("Sign up"),
+              ),
+            ] else ...[
+              IconButton(onPressed: onLoginUser, icon: const Icon(Icons.login)),
+            ],
+          ],
+
+          if (!isLoading && isLoggedIn) ...[
+            InkWell(
+              onTap: onAvatarTap,
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: ProfileAvatar(name: displayName),
+              ),
             ),
-            const SizedBox(width: 8),
-            _PillButton(
-              text: "Login as Company",
-              style: _PillStyle.dark,
-              onPressed: onLoginCompany,
-            ),
-            const SizedBox(width: 8),
-            _PillButton(
-              text: "Sign up",
-              style: _PillStyle.primary,
-              onPressed: onSignup,
-            ),
-          ] else ...[
-            // Small screens: keep just two clean buttons
-            _PillButton(text: "Login", style: _PillStyle.light, onPressed: onLoginUser),
-            const SizedBox(width: 8),
-            _PillButton(text: "Sign up", style: _PillStyle.primary, onPressed: onSignup),
           ],
         ],
       ),
     );
-  }
-}
-
-enum _PillStyle { light, dark, primary }
-
-class _PillButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onPressed;
-  final _PillStyle style;
-
-  const _PillButton({
-    required this.text,
-    required this.onPressed,
-    required this.style,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    switch (style) {
-      case _PillStyle.primary:
-        return ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE53935), // red
-            foregroundColor: Colors.white,
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            elevation: 0,
-          ),
-          child: Text(text),
-        );
-
-      case _PillStyle.dark:
-        return OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.black87,
-            side: BorderSide(color: Colors.black.withOpacity(0.35)),
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          child: Text(text),
-        );
-
-      case _PillStyle.light:
-      default:
-        return OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.black87,
-            side: BorderSide(color: Colors.black.withOpacity(0.18)),
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          child: Text(text),
-        );
-    }
   }
 }
 
@@ -278,15 +346,11 @@ class _HeroSection extends StatelessWidget {
                 Spacer(),
                 Text(
                   "Request. Quote. Deliver.",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  "A professional RFQ marketplace connecting users and companies.\nGet quotations and choose the best offer — instantly.",
+                  "Click a category to explore.\nLogin only when you want to act.",
                   style: TextStyle(color: Colors.white70, height: 1.3),
                 ),
                 Spacer(),
@@ -295,6 +359,54 @@ class _HeroSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LandingActions extends StatelessWidget {
+  final String role;
+  final VoidCallback onUserRequests;
+  final Future<void> Function() onCreateRequest;
+  final VoidCallback onCompanyBrowse;
+
+  const _LandingActions({
+    required this.role,
+    required this.onUserRequests,
+    required this.onCreateRequest,
+    required this.onCompanyBrowse,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (role == "company") {
+      return Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: onCompanyBrowse,
+              child: const Text("Browse Requests"),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: onUserRequests,
+            child: const Text("My Requests"),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () => onCreateRequest(),
+            child: const Text("Create Request"),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -365,5 +477,76 @@ class _CardItem {
   final String title;
   final String subtitle;
   final String assetPath;
-  const _CardItem(this.title, this.subtitle, this.assetPath);
+  final int categoryId;
+  const _CardItem(this.title, this.subtitle, this.assetPath, this.categoryId);
+}
+
+// ---------------- Explore Page ----------------
+
+class ExploreRequestsPage extends StatelessWidget {
+  final int categoryId;
+  final String title;
+  final String subtitle;
+  final String assetPath;
+
+  const ExploreRequestsPage({
+    super.key,
+    required this.categoryId,
+    required this.title,
+    required this.subtitle,
+    required this.assetPath,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = [
+      "Explore $title requests.",
+      "Login to submit quotations or post requests.",
+      "Real-time notifications supported.",
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    height: 220,
+                    width: double.infinity,
+                    child: Image.asset(
+                      assetPath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.black12,
+                        child: const Center(child: Icon(Icons.image, size: 64)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(subtitle, style: const TextStyle(color: Colors.black54)),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: preview.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, i) => ListTile(
+                      leading: const Icon(Icons.check_circle_outline),
+                      title: Text(preview[i]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

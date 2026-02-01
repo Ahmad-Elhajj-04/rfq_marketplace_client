@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:rfq_marketplace_flutter/core/ui/profile_avatar.dart';
 import 'package:rfq_marketplace_flutter/requests/data/requests_service.dart';
-import 'request_create_page.dart';
-import 'request_details_page.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/request_details_page.dart';
 import 'package:rfq_marketplace_flutter/notifications/presentation/notifications_page.dart';
+import 'package:rfq_marketplace_flutter/shared/session.dart';
 
 class RequestsPage extends StatefulWidget {
   const RequestsPage({super.key});
@@ -31,7 +33,7 @@ class _RequestsPageState extends State<RequestsPage> {
     });
 
     try {
-      final items = await _service.myRequests(); // user-only endpoint
+      final items = await _service.myRequests();
       setState(() => _requests = items);
     } catch (e) {
       setState(() => _error = e.toString());
@@ -55,8 +57,18 @@ class _RequestsPageState extends State<RequestsPage> {
     );
   }
 
+  void _openProfileMenu() {
+    // Simple placeholder for now (later: profile/settings/logout)
+    final name = Session.name ?? "User";
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Profile: $name (next feature)")),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayName = (Session.name ?? "User").trim();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Requests"),
@@ -64,13 +76,21 @@ class _RequestsPageState extends State<RequestsPage> {
           IconButton(
             onPressed: _openNotifications,
             icon: const Icon(Icons.notifications),
-            tooltip: "Notifications",
           ),
           IconButton(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
-            tooltip: "Refresh",
           ),
+          const SizedBox(width: 6),
+          InkWell(
+            onTap: _openProfileMenu,
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: ProfileAvatar(name: displayName),
+            ),
+          ),
+          const SizedBox(width: 10),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -90,7 +110,6 @@ class _RequestsPageState extends State<RequestsPage> {
           final r = _requests[index] as Map<String, dynamic>;
           final title = r["title"]?.toString() ?? "Untitled";
           final status = r["status"]?.toString() ?? "-";
-          final id = r["id"] ?? "-";
 
           return ListTile(
             title: Text(title),
