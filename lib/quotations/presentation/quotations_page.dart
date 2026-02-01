@@ -35,8 +35,6 @@ class _QuotationsPageState extends State<QuotationsPage> {
     if (v is num) return v.toInt();
     return int.tryParse(v.toString()) ?? 0;
   }
-
-  // ---------- fallback client ranking (only used if backend doesn't provide is_best/rank) ----------
   double _norm(double value, double min, double max) {
     if (max <= min) return 0;
     return (value - min) / (max - min);
@@ -238,8 +236,6 @@ class _QuotationsPageState extends State<QuotationsPage> {
                           ),
                         ),
                       const SizedBox(width: 6),
-
-                      // ✅ Menu actions to prevent overflow
                       if (isUser && status == "submitted")
                         PopupMenuButton<String>(
                           onSelected: (v) {

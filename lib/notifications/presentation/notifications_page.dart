@@ -47,8 +47,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Marked as read ✅")),
       );
-
-      // Reload list after marking read
       _load();
     } catch (e) {
       if (!mounted) return;
@@ -75,7 +73,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       body: Column(
         children: [
-          // ✅ Clear switch UX
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(

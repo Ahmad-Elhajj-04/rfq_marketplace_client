@@ -36,13 +36,10 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
       _subByCategory.clear();
       for (final s in subs) {
         final m = s as Map<String, dynamic>;
-        final cid = (m["category_id"] as int);
-        _subByCategory[cid] = m;
+        _subByCategory[m["category_id"] as int] = m;
       }
 
-      setState(() {
-        _categories = cats;
-      });
+      setState(() => _categories = cats);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -64,22 +61,16 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
       }
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed: $e")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed: $e")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final count = _subByCategory.length;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text("Subscriptions ($count)"),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
+        title: Text("Subscriptions (${_subByCategory.length})"),
+        actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -93,14 +84,13 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
           final id = c["id"] as int;
           final name = (c["name"] ?? "").toString();
           final type = (c["type"] ?? "").toString();
-
-          final isOn = _subByCategory.containsKey(id);
+          final on = _subByCategory.containsKey(id);
 
           return ListTile(
             title: Text(name),
             subtitle: Text(type),
             trailing: Switch(
-              value: isOn,
+              value: on,
               onChanged: (v) => _toggle(id, v),
             ),
           );

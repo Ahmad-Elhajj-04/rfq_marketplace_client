@@ -53,9 +53,7 @@ class _MyQuotationsPageState extends State<MyQuotationsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Quotations"),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
+        actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -77,8 +75,8 @@ class _MyQuotationsPageState extends State<MyQuotationsPage> {
           final canWithdraw = status == "submitted";
 
           return ListTile(
-            title: Text("Quotation #$id • Request #$requestId"),
-            subtitle: Text("Total: $total • Delivery: $days days • Status: $status"),
+            title: Text("Quotation #$id"),
+            subtitle: Text("Request: $requestId • Total: $total • Days: $days • Status: $status"),
             trailing: canWithdraw
                 ? TextButton(
               onPressed: () async {
@@ -86,7 +84,7 @@ class _MyQuotationsPageState extends State<MyQuotationsPage> {
                   context: context,
                   builder: (_) => AlertDialog(
                     title: const Text("Withdraw quotation?"),
-                    content: const Text("This will remove your quotation if it hasn’t been accepted."),
+                    content: const Text("Allowed only if not accepted/rejected."),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
                       ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes")),

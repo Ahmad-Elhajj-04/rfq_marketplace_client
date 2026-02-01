@@ -32,6 +32,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
   Future<void> _cancelRequest() async {
     final id = _request["id"] as int;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -42,9 +43,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
       setState(() => _request = updated);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Request cancelled ✅")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Request cancelled ✅")));
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -65,7 +64,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     final canCancel = isUser && status == "open";
 
     return Scaffold(
-      appBar: AppBar(title: Text("Request")),
+      appBar: AppBar(title: const Text("Request Details")),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 820),
@@ -74,25 +73,25 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
             children: [
               Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
+
               _StatusPill(status: status),
               const SizedBox(height: 12),
+
               Text(desc),
               const SizedBox(height: 16),
+
               _InfoRow(label: "City", value: city),
               const SizedBox(height: 8),
               _InfoRow(label: "Quantity", value: "$qty $unit"),
+
               const SizedBox(height: 18),
 
               if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-              if (_loading) const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              if (_loading) const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator())),
 
-              // --- Actions ---
-              if (!isLoggedIn) ...[
-                const Text("Login to submit a quotation or manage requests."),
-              ] else ...[
+              if (!isLoggedIn)
+                const Text("Login to submit a quotation or manage requests.")
+              else ...[
                 if (isCompany) ...[
                   SizedBox(
                     height: 48,
@@ -108,6 +107,15 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => QuotationsPage(requestId: id)),
+                      );
+                    },
+                    child: const Text("View Quotations (restricted)"),
+                  ),
                 ],
 
                 if (isUser) ...[
@@ -127,7 +135,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                   const SizedBox(height: 10),
                 ],
 
-                // ✅ Cancel (user only, open only)
                 if (canCancel)
                   SizedBox(
                     height: 48,
@@ -213,10 +220,7 @@ class _StatusPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-        child: Text(
-          status.toUpperCase(),
-          style: TextStyle(fontWeight: FontWeight.bold, color: fg, fontSize: 12),
-        ),
+        child: Text(status.toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: fg, fontSize: 12)),
       ),
     );
   }
