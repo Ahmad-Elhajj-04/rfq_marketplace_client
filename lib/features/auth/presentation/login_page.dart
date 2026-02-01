@@ -3,11 +3,10 @@ import 'package:flutter/services.dart';
 
 import 'package:rfq_marketplace_flutter/features/auth/data/auth_service.dart';
 import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
-import 'package:rfq_marketplace_flutter/requests/presentation/requests_page.dart';
-import 'package:rfq_marketplace_flutter/requests/presentation/company_requests_page.dart';
+import 'package:rfq_marketplace_flutter/shared/session.dart';
 
 class LoginPage extends StatefulWidget {
-  final String? expectedRole; // "user" or "company"
+  final String? expectedRole;
   const LoginPage({super.key, this.expectedRole});
 
   @override
@@ -53,12 +52,11 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final res = await _auth.login(_email.text, _password.text);
-      final token = res["token"] as String;
 
+      final token = res["token"] as String;
       final user = res["user"] as Map<String, dynamic>;
       final role = (user["role"] ?? "").toString();
 
-      // Enforce role from landing choice
       if (widget.expectedRole != null && role != widget.expectedRole) {
         setState(() {
           _error = "This account is not a ${widget.expectedRole} account.";
@@ -68,19 +66,14 @@ class _LoginPageState extends State<LoginPage> {
 
       await TokenStore.save(token);
 
+      Session.userId = user["id"] as int;
+      Session.role = role;
+      Session.name = (user["name"] ?? "").toString();
+
       if (!mounted) return;
 
-      if (role == "company") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CompanyRequestsPage()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const RequestsPage()),
-        );
-      }
+      // ✅ Stay on landing: pop back to root
+      Navigator.popUntil(context, (route) => route.isFirst);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -103,18 +96,12 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      _title,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
+                    Text(_title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 18),
 
                     TextFormField(
                       controller: _email,
-                      decoration: const InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder()),
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.username],
                       validator: (v) {
@@ -132,10 +119,7 @@ class _LoginPageState extends State<LoginPage> {
                       enableSuggestions: false,
                       autocorrect: false,
                       autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(
-                        labelText: "Password",
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: "Password", border: OutlineInputBorder()),
                       validator: (v) => (v ?? "").isEmpty ? "Password is required" : null,
                       onEditingComplete: () => TextInput.finishAutofillContext(),
                     ),
@@ -150,19 +134,9 @@ class _LoginPageState extends State<LoginPage> {
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submit,
                         child: _loading
-                            ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Text("Login"),
                       ),
-                    ),
-
-                    const SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, "/register", arguments: "user"),
-                      child: const Text("Create account"),
                     ),
                   ],
                 ),
