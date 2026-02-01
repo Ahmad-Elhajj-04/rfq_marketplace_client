@@ -5,8 +5,8 @@ import 'package:rfq_marketplace_flutter/core/storage/token_store.dart';
 import 'package:rfq_marketplace_flutter/core/ui/profile_avatar.dart';
 import 'package:rfq_marketplace_flutter/shared/session.dart';
 
-// ✅ import the create request page
 import 'package:rfq_marketplace_flutter/requests/presentation/request_create_page.dart';
+import 'package:rfq_marketplace_flutter/requests/presentation/explore_requests_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -107,15 +107,11 @@ class _LandingPageState extends State<LandingPage> {
     Navigator.pushNamed(context, "/company-requests");
   }
 
-  // ✅ FIX: go directly to Create Request page
   Future<void> _openCreateRequest() async {
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const RequestCreatePage()),
     );
-
-    // Optional: after returning, refresh landing session (not required)
-    // _bootstrapSession();
   }
 
   void _openCategory(_CardItem c) {
@@ -152,17 +148,10 @@ class _LandingPageState extends State<LandingPage> {
               isLoading: _checkingAuth,
               isLoggedIn: isLoggedIn,
               displayName: (Session.name ?? "User").trim(),
-              onSearch: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Search: ${_search.text.trim()} (next feature)")),
-                );
-              },
-              onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user")
-                  .then((_) => _bootstrapSession()),
-              onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company")
-                  .then((_) => _bootstrapSession()),
-              onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user")
-                  .then((_) => _bootstrapSession()),
+              onSearch: () {},
+              onLoginUser: () => Navigator.pushNamed(context, "/login", arguments: "user").then((_) => _bootstrapSession()),
+              onLoginCompany: () => Navigator.pushNamed(context, "/login", arguments: "company").then((_) => _bootstrapSession()),
+              onSignup: () => Navigator.pushNamed(context, "/register", arguments: "user").then((_) => _bootstrapSession()),
               onAvatarTap: _openProfileMenu,
             ),
 
@@ -182,7 +171,7 @@ class _LandingPageState extends State<LandingPage> {
                       _LandingActions(
                         role: Session.role!,
                         onUserRequests: _openUserRequests,
-                        onCreateRequest: _openCreateRequest, // ✅ now opens form
+                        onCreateRequest: _openCreateRequest,
                         onCompanyBrowse: _openCompanyBrowse,
                       ),
                       const SizedBox(height: 18),
@@ -210,7 +199,7 @@ class _LandingPageState extends State<LandingPage> {
                           title: c.title,
                           subtitle: c.subtitle,
                           assetPath: c.assetPath,
-                          onTap: () => _openCategory(c),
+                          onTap: () => _openCategory(c), // ✅ real explore
                         );
                       },
                     ),
@@ -224,8 +213,6 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 }
-
-// ---------------- Top Bar ----------------
 
 class _TopBar extends StatelessWidget {
   final TextEditingController controller;
@@ -286,8 +273,7 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          if (isLoading)
-            const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+          if (isLoading) const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
 
           if (!isLoading && !isLoggedIn) ...[
             if (w > 700) ...[
@@ -350,7 +336,7 @@ class _HeroSection extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  "Click a category to explore.\nLogin only when you want to act.",
+                  "Click a category to browse real requests.",
                   style: TextStyle(color: Colors.white70, height: 1.3),
                 ),
                 Spacer(),
@@ -479,74 +465,4 @@ class _CardItem {
   final String assetPath;
   final int categoryId;
   const _CardItem(this.title, this.subtitle, this.assetPath, this.categoryId);
-}
-
-// ---------------- Explore Page ----------------
-
-class ExploreRequestsPage extends StatelessWidget {
-  final int categoryId;
-  final String title;
-  final String subtitle;
-  final String assetPath;
-
-  const ExploreRequestsPage({
-    super.key,
-    required this.categoryId,
-    required this.title,
-    required this.subtitle,
-    required this.assetPath,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final preview = [
-      "Explore $title requests.",
-      "Login to submit quotations or post requests.",
-      "Real-time notifications supported.",
-    ];
-
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: SizedBox(
-                    height: 220,
-                    width: double.infinity,
-                    child: Image.asset(
-                      assetPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.black12,
-                        child: const Center(child: Icon(Icons.image, size: 64)),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(subtitle, style: const TextStyle(color: Colors.black54)),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: preview.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (_, i) => ListTile(
-                      leading: const Icon(Icons.check_circle_outline),
-                      title: Text(preview[i]),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
