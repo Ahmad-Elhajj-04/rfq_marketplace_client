@@ -12,8 +12,15 @@ class RequestsService {
     final res = await _api.post("/v1/requests", payload);
     return res["request"] as Map<String, dynamic>;
   }
+
   Future<Map<String, dynamic>> getRequest(int id) async {
     final res = await _api.get("/v1/requests/$id");
+    return res["request"] as Map<String, dynamic>;
+  }
+
+  // NEW: cancel request (user only, open only)
+  Future<Map<String, dynamic>> cancelRequest(int id) async {
+    final res = await _api.post("/v1/requests/$id/cancel", {});
     return res["request"] as Map<String, dynamic>;
   }
 }
